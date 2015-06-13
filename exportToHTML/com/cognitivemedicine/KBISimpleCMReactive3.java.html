@@ -1,0 +1,111 @@
+<html>
+<head>
+<title>KBISimpleCMReactive3.java</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.ln { color: rgb(0,0,0); font-weight: normal; font-style: normal; }
+.s0 { color: rgb(0,0,128); font-weight: bold; }
+.s1 { }
+.s2 { color: rgb(128,128,128); font-style: italic; }
+.s3 { color: rgb(0,128,0); font-weight: bold; }
+.s4 { color: rgb(0,0,255); }
+</style>
+</head>
+<BODY BGCOLOR="#ffffff">
+<TABLE CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#C0C0C0" >
+<TR><TD><CENTER>
+<FONT FACE="Arial, Helvetica" COLOR="#000000">
+KBISimpleCMReactive3.java</FONT>
+</center></TD></TR></TABLE>
+<pre>
+
+<span class="s0">package </span><span class="s1">com.cognitivemedicine; 
+ 
+</span><span class="s0">import </span><span class="s1">com.cognitivemedicine.conceptmodels.MockConceptModelReactive3.Observation; 
+</span><span class="s0">import </span><span class="s1">com.cognitivemedicine.conceptmodels.MockConceptModelReactive3.Quantity; 
+</span><span class="s0">import </span><span class="s1">com.cognitivemedicine.conceptmodels.MockConceptModelReactive3.Related; 
+</span><span class="s0">import </span><span class="s1">com.cognitivemedicine.util.KBFacilitator; 
+</span><span class="s0">import </span><span class="s1">drools.traits.util.KBSessionInterface; 
+</span><span class="s0">import </span><span class="s1">org.junit.Before; 
+</span><span class="s0">import </span><span class="s1">org.junit.Test; 
+ 
+</span><span class="s0">import </span><span class="s1">java.util.ArrayList; 
+</span><span class="s0">import </span><span class="s1">java.util.List; 
+ 
+</span><span class="s0">import static </span><span class="s1">org.junit.Assert.assertEquals; 
+ 
+</span><span class="s2">/** 
+ * Created by mhekmatnejad on 6/11/15. 
+ */</span><span class="s1"> 
+</span><span class="s0">public class </span><span class="s1">KBISimpleCMReactive3 { 
+ 
+    KBFacilitator kbFacilitator = </span><span class="s0">null</span><span class="s1">; 
+    List&lt;String&gt; checkList = </span><span class="s0">new </span><span class="s1">ArrayList&lt;String&gt;(); 
+ 
+    @Before 
+    </span><span class="s0">public void </span><span class="s1">initKB() 
+    { 
+ 
+        System.out.println(</span><span class="s3">&quot;KB initialization testing&quot;</span><span class="s1">); 
+        </span><span class="s0">try </span><span class="s1">{ 
+            kbFacilitator = </span><span class="s0">new </span><span class="s1">KBFacilitator(</span><span class="s0">true</span><span class="s1">,</span><span class="s3">&quot;simpleConceptModelReactive3.drl&quot;</span><span class="s1">,</span><span class="s0">null</span><span class="s1">, KBSessionInterface.Engine.PHREAK,</span><span class="s0">true</span><span class="s1">); 
+            </span><span class="s0">assert </span><span class="s1">(</span><span class="s0">true</span><span class="s1">); 
+        } </span><span class="s0">catch </span><span class="s1">(Exception e) { 
+            e.printStackTrace(); 
+            </span><span class="s0">assert</span><span class="s1">(</span><span class="s0">false</span><span class="s1">); 
+        } 
+ 
+    } 
+ 
+    @Test 
+    </span><span class="s0">public void </span><span class="s1">runKB1() 
+    { 
+        </span><span class="s0">if</span><span class="s1">(kbFacilitator==</span><span class="s0">null</span><span class="s1">) 
+            initKB(); 
+        Observation observation = getinitiatedObject4KBInsertion(); 
+        kbFacilitator.insertToKB(observation); 
+        kbFacilitator.setGloabl(</span><span class="s3">&quot;checkList&quot;</span><span class="s1">, checkList); 
+        </span><span class="s0">int </span><span class="s1">firedNum = kbFacilitator.fireAllRules(); 
+        System.out.println(firedNum); 
+        assertEquals(</span><span class="s4">1</span><span class="s1">, checkList.size()); 
+     } 
+ 
+    @Test 
+    </span><span class="s0">public void </span><span class="s1">runKB2() 
+    { 
+    } 
+ 
+    @Test 
+    </span><span class="s0">public void </span><span class="s1">runKB3() 
+    { 
+    } 
+ 
+    </span><span class="s0">public </span><span class="s1">Observation getinitiatedObject4KBInsertion(){ 
+ 
+        Observation bpObservation = </span><span class="s0">new </span><span class="s1">Observation(</span><span class="s3">&quot;sct-Blood Pressure&quot;</span><span class="s1">); 
+        </span><span class="s2">//bpObservation.setValueQuantity(new Quantity(33.0f,&quot;TEST&quot;));</span><span class="s1"> 
+        Quantity sysQuantity = </span><span class="s0">new </span><span class="s1">Quantity(</span><span class="s4">120.0f</span><span class="s1">,</span><span class="s3">&quot;mmHg&quot;</span><span class="s1">); 
+        Quantity diaQuantity = </span><span class="s0">new </span><span class="s1">Quantity(</span><span class="s4">80.0f</span><span class="s1">,</span><span class="s3">&quot;mmHg&quot;</span><span class="s1">); 
+        Observation systolicObservation = </span><span class="s0">new </span><span class="s1">Observation(</span><span class="s3">&quot;systolic&quot;</span><span class="s1">); 
+        Observation diastolicObservation = </span><span class="s0">new </span><span class="s1">Observation(</span><span class="s3">&quot;diastolic&quot;</span><span class="s1">); 
+ 
+        systolicObservation.setValueQuantity(sysQuantity); 
+        diastolicObservation.setValueQuantity(diaQuantity); 
+ 
+        List&lt;Related&gt; obsList = </span><span class="s0">new </span><span class="s1">ArrayList&lt;Related&gt;(</span><span class="s4">2</span><span class="s1">); 
+        Related sysRelated = </span><span class="s0">new </span><span class="s1">Related(systolicObservation); 
+        sysRelated.setType(</span><span class="s3">&quot;has-component&quot;</span><span class="s1">); 
+        Related diaRelated = </span><span class="s0">new </span><span class="s1">Related(diastolicObservation); 
+        diaRelated.setType(</span><span class="s3">&quot;has-component&quot;</span><span class="s1">); 
+        obsList.add(sysRelated); 
+        obsList.add(diaRelated); 
+ 
+        bpObservation.setRelated(obsList); 
+ 
+        </span><span class="s0">return </span><span class="s1">bpObservation; 
+ 
+    } 
+} 
+</span></pre>
+</body>
+</html>

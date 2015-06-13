@@ -1,0 +1,133 @@
+
+package com.cognitivemedicine;
+
+
+import java.util.*;
+
+import org.drools.core.factmodel.traits.Thing;
+import org.drools.core.factmodel.traits.Traitable;
+import com.cognitivemedicine.conceptmodels.MockConceptModel2.Observation;
+import com.cognitivemedicine.conceptmodels.MockConceptModel2.R_Observation;
+import com.cognitivemedicine.conceptmodels.MockConceptModel2.Related;
+import com.cognitivemedicine.conceptmodels.MockConceptModel2.Quantity;
+
+global List checkList;
+
+//*********** type declaration ***********//
+
+declare trait tObservation
+@propertyReactive
+    code : String
+    related : List
+    //valueQuantity : tQuantitativeMeasurement
+end
+
+declare trait tBloodPressure// extends tObservation
+@propertyReactive
+    systolic : tQuantitativeMeasurement
+    diastolic : tQuantitativeMeasurement
+end
+
+declare trait tQuantitativeMeasurement
+@propertyReactive
+    value : Float
+    unit : String
+end
+
+
+
+declare Observation
+@Traitable
+@propertyReactive
+end
+
+declare R_Observation extends Observation
+@Traitable
+@propertyReactive
+end
+
+declare Related
+@Traitable
+@propertyReactive
+end
+
+declare Quantity
+@Traitable(logical = true)
+@propertyReactive
+end
+
+declare HashMap
+@Traitable(logical = true)
+@propertyReactive
+end
+
+declare List
+@Traitable(logical = true)
+@propertyReactive
+end
+
+//*********** Concept mapper declaration ***********//
+
+declare ConceptMapping
+    vocabulary  : String
+    codeMap     : Map
+end
+
+rule "Init Mock Mapping"
+salience 100000
+when
+then
+    Map map = new HashMap();
+        map.put( "observation", tObservation.class );
+        map.put( "R_sct-Blood Pressure", tBloodPressure.class );
+        map.put( "Systolic", tQuantitativeMeasurement.class );
+        map.put( "Diastolic", tQuantitativeMeasurement.class );
+    ConceptMapping m1 = new ConceptMapping( "FHIR", map );
+    insert( m1 );
+end
+
+//*********** Classifier Rules ***********//
+
+
+rule "R_Observation-BloodPressure"
+no-loop
+when
+    $obs : Observation( $code : code=='sct-Blood Pressure')
+then
+    R_Observation robs = new R_Observation( $obs );
+    insert( robs );
+    System.out.println( "R_Observation is inserted as an equivalent to Observation" );
+end
+
+rule "Observation-BloodPressure"
+no-loop
+when
+    $obs : R_Observation($code : code=='R_sct-Blood Pressure', $relMap : this.relatedMap )
+    ConceptMapping( vocabulary == 'FHIR', $map : codeMap, codeMap[ $code ] != null )
+then
+    Object x = don( $relMap, (Class) $map.get( $code ) );
+    System.out.println( "Classified3 : Blood Pressure" + x );
+end
+
+
+
+
+
+
+//*********** Business Rules ***********//
+
+
+rule "Blood Pressure Trait fire test"
+no-loop
+when
+    tBloodPressure( systolic.value < 140 , diastolic.value > 60 )
+then
+    checkList.add("1");
+    System.out.println("tBloodPressure is fired!");
+end
+
+
+
+
+
+

@@ -1,0 +1,197 @@
+
+package com.cognitivemedicine;
+
+
+import java.util.*;
+
+import org.drools.core.factmodel.traits.Thing;
+import org.drools.core.factmodel.traits.Traitable;
+import com.cognitivemedicine.conceptmodels.MockConceptModelReactive1.Observation;
+import com.cognitivemedicine.conceptmodels.MockConceptModelReactive1.Related;
+import com.cognitivemedicine.conceptmodels.MockConceptModelReactive1.Quantity;
+
+global List checkList;
+
+//*********** type declaration ***********//
+
+declare trait tObservation
+@propertyReactive
+    code : String
+    related : List
+    //valueQuantity : tQuantitativeMeasurement
+end
+
+declare trait tBloodPressure// extends tObservation
+@Trait( logical = true )
+@propertyReactive
+    title : String = "none"
+    systolic : tQuantitativeMeasurement
+    diastolic : tQuantitativeMeasurement
+end
+
+declare trait tQuantitativeMeasurement
+@Trait( logical = true )
+@propertyReactive
+    value : Float
+    unit : String
+end
+
+
+
+declare Observation
+@Traitable(logical = true)
+@propertyReactive
+end
+
+declare Related
+@Traitable
+@propertyReactive
+end
+
+declare Quantity
+@Traitable(logical = true)
+@propertyReactive
+end
+
+declare HashMap
+@Traitable(logical = true)
+@propertyReactive
+end
+
+declare List
+@Traitable(logical = true)
+@propertyReactive
+end
+
+//*********** Concept mapper declaration ***********//
+
+declare ConceptMapping
+    vocabulary  : String
+    codeMap     : Map
+end
+
+rule "Init Mock Mapping"
+salience 100000
+when
+then
+    Map map = new HashMap();
+        map.put( "observation", tObservation.class );
+        map.put( "sct-Blood Pressure", tBloodPressure.class );
+        map.put( "systolic", tQuantitativeMeasurement.class );
+        map.put( "diastolic", tQuantitativeMeasurement.class );
+    ConceptMapping m1 = new ConceptMapping( "FHIR", map );
+    insert( m1 );
+end
+
+//*********** Classifier Rules ***********//
+
+
+rule "R_Observation-BloodPressure"
+no-loop
+when
+    $obs : Observation( $code : code, $systolic : related[0].target.valueQuantity, $diastolic : related[1].target.valueQuantity )
+    //ConceptMapping( vocabulary == 'FHIR', $sysMap : codeMap, codeMap[ ((Observation) $systolic).getCode() ] != null )
+    //ConceptMapping( vocabulary == 'FHIR', $diaMap : codeMap, codeMap[ ((Observation) $diastolic).getCode() ] != null )
+then
+    Map<String, Quantity> bpMap = new HashMap<String, Quantity>();
+    bpMap.put("systolic", $systolic);
+    bpMap.put("diastolic", $diastolic);
+    insert(bpMap);
+    System.out.println( "Map for Systolic and Diastolic is created and inserted" );
+end
+
+rule "Observation-BloodPressure"
+no-loop
+when
+    $obs : Observation( $code : code, $systolic : related[0].target.valueQuantity, $diastolic : related[1].target.valueQuantity )
+    $bpmap : Map( this['systolic'] == $systolic, this['diastolic'] == $diastolic )
+    ConceptMapping( vocabulary == 'FHIR', $map : codeMap, codeMap[ $code ] != null )
+then
+    Object x = don( $bpmap, (Class) $map.get( $code ) );
+    System.out.println( "Classified3 : Blood Pressure" + x );
+end
+
+
+
+
+
+//*********** Business Rules ***********//
+
+
+rule "Blood Pressure Trait fire test"
+no-loop
+when
+    $tbp : tBloodPressure( systolic.value < 140 , diastolic.value > 60 ) //@Watch(systolic)
+then
+    checkList.add("1");
+    System.out.println(">>tBloodPressure is fired! " + $tbp );
+end
+
+
+//test rules
+
+
+rule "apply make-change1"
+no-loop
+when
+    String( this.equals( "make-change1" ) )
+    $tbp : tBloodPressure( title=="none" )
+then
+    System.out.println("Change 1 Applied");
+    modify( $tbp ) { setTitle( "checked" ); }
+end
+
+rule "work based on make-change1"
+no-loop
+when
+    $tbp : tBloodPressure( title=="checked" )
+then
+    System.out.println("Change 1 works");
+end
+
+
+
+
+
+rule "apply make-change2"
+no-loop
+when
+    String( this.equals( "make-change2" ) )
+    $tbp : tBloodPressure( title=="checked" )
+then
+    System.out.println("Change 2 Applied " + ((Map)$tbp.getCore()).get("systolic") );
+    modify( $tbp ) { getSystolic().setValue( 155f ); }
+end
+
+rule "work based on make-change2"
+no-loop
+when
+    $tbp : tBloodPressure( systolic.value > 150 ) //@Watch(systolic)
+then
+    System.out.println("Change 2 works");
+end
+
+
+
+
+
+
+rule "apply make-change3"
+no-loop
+when
+    String( this.equals( "make-change3" ) )
+    $obs : Observation( $code : code, $systolic : related[0].target.valueQuantity )
+then
+    System.out.println("Change 3 Applied " );
+    modify( $systolic ) { setValue( 175f ); }
+end
+
+rule "work based on make-change3"
+no-loop
+when
+    String( this.equals( "make-change3" ) )
+    $tbp : tBloodPressure( systolic.value > 170 )
+then
+    System.out.println("Change 3 works " + $tbp );
+end
+

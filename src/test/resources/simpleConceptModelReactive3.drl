@@ -1,0 +1,129 @@
+
+package com.cognitivemedicine;
+
+
+import java.util.*;
+
+import org.drools.core.factmodel.traits.Thing;
+import org.drools.core.factmodel.traits.Traitable;
+import com.cognitivemedicine.conceptmodels.MockConceptModelReactive3.Observation;
+import com.cognitivemedicine.conceptmodels.MockConceptModelReactive3.Related;
+import com.cognitivemedicine.conceptmodels.MockConceptModelReactive3.Quantity;
+
+global List checkList;
+
+//*********** type declaration ***********//
+
+declare trait tBloodPressure
+@Trait( logical = true )
+@propertyReactive
+    systolic : tQuantitativeMeasurement
+    diastolic : tQuantitativeMeasurement
+end
+
+declare trait tQuantitativeMeasurement
+@Trait( logical = true )
+@propertyReactive
+    value : Float
+    unit : String
+end
+
+
+
+declare Observation
+@Traitable(logical = true)
+@propertyReactive
+end
+
+declare Related
+@Traitable
+@propertyReactive
+end
+
+declare Quantity
+@Traitable(logical = true)
+@propertyReactive
+end
+
+declare HashMap
+@Traitable(logical = true)
+@propertyReactive
+end
+
+declare List
+@Traitable(logical = true)
+@propertyReactive
+end
+
+//*********** Concept mapper declaration ***********//
+
+declare ConceptMapping
+    vocabulary  : String
+    codeMap     : Map
+end
+
+declare ObservationMapping
+    code  : String
+    observationMap     : Map
+end
+
+rule "Init Mock Mapping"
+salience 100000
+when
+then
+    Map map = new HashMap();
+        map.put( "sct-Blood Pressure", tBloodPressure.class );
+    ConceptMapping m1 = new ConceptMapping( "FHIR", map );
+    insert( m1 );
+end
+
+//*********** Classifier Rules ***********//
+
+
+rule "R_Observation-BloodPressure"
+no-loop
+when
+    Observation( $code : code, related[0].type == "has-component" , related[1].type == "has-component" )
+    Observation( code == $code, $tar0 : related[0].target, $tar1 : related[1].target )
+then
+    Map<String, Quantity> bpMap = new HashMap<String, Quantity>();
+    bpMap.put( $tar0.getCode(), $tar0.getValueQuantity() );
+    bpMap.put( $tar1.getCode(), $tar1.getValueQuantity() );
+    ObservationMapping oMap = new ObservationMapping();
+    oMap.setCode( $code );
+    oMap.setObservationMap( bpMap );
+    insert( oMap );
+    insert(bpMap);
+    System.out.println( "Map for Systolic and Diastolic is created and inserted" );
+end
+
+rule "Observation-BloodPressure"
+no-loop
+when
+    $obs : Observation( $code : code )
+    ObservationMapping( code==$code, $bpmap : observationMap )
+    ConceptMapping( vocabulary == 'FHIR', $map : codeMap, codeMap[ $code ] != null )
+then
+    Object x = don( $bpmap, (Class) $map.get( $code ) );
+    System.out.println( "Classified3 : Blood Pressure" + x );
+end
+
+
+
+
+
+//*********** Business Rules ***********//
+
+
+rule "Blood Pressure Trait fire test"
+no-loop
+when
+    $tbp : tBloodPressure( systolic.value < 140 , diastolic.value > 60 )
+then
+    checkList.add("1");
+    System.out.println(">>tBloodPressure is fired! " + $tbp );
+end
+
+
+//test rules
+
